@@ -1,0 +1,373 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a}
+#root{background:#0a0a0a;min-height:600px;color:#c8c6bc;font-family:'IBM Plex Mono',monospace}
+.top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.07)}
+.brand{font-size:11px;color:#5DCAA5;letter-spacing:.15em;text-transform:uppercase}
+.title{font-size:15px;font-weight:300;color:#e8e6dc;margin-top:2px}
+.cities{display:flex;gap:3px;background:rgba(255,255,255,.04);padding:3px;border-radius:4px;border:1px solid rgba(255,255,255,.07)}
+.city{padding:5px 14px;font-size:11px;border:none;background:transparent;color:#666;cursor:pointer;border-radius:3px;letter-spacing:.08em;text-transform:uppercase;transition:all .2s}
+.city.on{background:#1D9E75;color:#fff}
+.body{display:flex;height:560px}
+.sidebar{width:220px;flex-shrink:0;border-right:1px solid rgba(255,255,255,.06);padding:14px 12px;display:flex;flex-direction:column;gap:16px;overflow-y:auto}
+.slabel{font-size:10px;color:#5DCAA5;text-transform:uppercase;letter-spacing:.14em;margin-bottom:8px}
+.row{margin-bottom:10px}
+.rlabel{display:flex;justify-content:space-between;margin-bottom:4px}
+.rlabel span{font-size:10px;color:#666;text-transform:uppercase}
+.rlabel em{font-size:10px;color:#5DCAA5;font-style:normal}
+input[type=range]{width:100%;accent-color:#1D9E75;height:3px;cursor:pointer}
+.btn{width:100%;padding:10px;background:rgba(29,158,117,.15);color:#5DCAA5;border:1px solid rgba(29,158,117,.35);border-radius:3px;font-size:10px;text-transform:uppercase;letter-spacing:.12em;cursor:pointer;transition:all .2s;font-family:inherit}
+.btn:hover{background:rgba(29,158,117,.25)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.status{font-size:10px;color:#EF9F27;border-left:2px solid #EF9F27;padding-left:8px;line-height:1.6;min-height:32px}
+.metrics{margin-top:auto}
+.metric{padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid rgba(255,255,255,.04)}
+.metric:last-child{border-bottom:none;margin-bottom:0}
+.mlabel{font-size:10px;color:#444;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.mval{font-size:22px;font-weight:300;letter-spacing:-.02em}
+.canvas-wrap{flex:1;position:relative;overflow:hidden}
+canvas{display:block;width:100%;height:100%}
+.overlay{position:absolute;top:10px;left:12px;pointer-events:none}
+.otitle{font-size:11px;color:#5DCAA5;text-transform:uppercase;letter-spacing:.14em}
+.osub{font-size:9px;color:#333;text-transform:uppercase;letter-spacing:.1em;margin-top:2px}
+.legend{position:absolute;top:10px;right:12px;display:flex;gap:10px;pointer-events:none}
+.litem{display:flex;align-items:center;gap:4px}
+.ldot{width:8px;height:8px;border-radius:2px}
+.ltext{font-size:9px;color:#444;text-transform:uppercase}
+.bar{display:flex;justify-content:space-between;align-items:center;padding:6px 12px;border-top:1px solid rgba(255,255,255,.04);font-size:9px;color:#333;text-transform:uppercase;letter-spacing:.08em}
+.barst{color:#1D9E75}
+</style>
+
+<div id="root">
+<div class="top">
+  <div>
+    <div class="brand">Ukubona LLC · T509</div>
+    <div class="title">Waste Twin · Municipal Loss Optimizer</div>
+  </div>
+  <div class="cities">
+    <button class="city on" onclick="setCity('Kampala',this)">Kampala</button>
+    <button class="city" onclick="setCity('Jinja',this)">Jinja</button>
+    <button class="city" onclick="setCity('Mbale',this)">Mbale</button>
+  </div>
+</div>
+
+<div class="body">
+  <div class="sidebar">
+    <div>
+      <div class="slabel">Loss weights L(θ)</div>
+      <div class="row">
+        <div class="rlabel"><span>Collection gap</span><em id="v1">0.35</em></div>
+        <input type="range" min="0" max="0.6" step="0.01" value="0.35" oninput="setW('w1',this.value)">
+      </div>
+      <div class="row">
+        <div class="rlabel"><span>Emissions</span><em id="v2">0.25</em></div>
+        <input type="range" min="0" max="0.5" step="0.01" value="0.25" oninput="setW('w2',this.value)">
+      </div>
+      <div class="row">
+        <div class="rlabel"><span>Inclusion ↑</span><em id="v3">0.20</em></div>
+        <input type="range" min="0" max="0.5" step="0.01" value="0.20" oninput="setW('w3',this.value)">
+      </div>
+      <div class="row">
+        <div class="rlabel"><span>Cost</span><em id="v4">0.15</em></div>
+        <input type="range" min="0" max="0.4" step="0.01" value="0.15" oninput="setW('w4',this.value)">
+      </div>
+    </div>
+    <div>
+      <div class="slabel" style="color:#EF9F27">Bayesian params</div>
+      <div class="row">
+        <div class="rlabel"><span>Learning rate η</span><em id="ve" style="color:#EF9F27">0.10</em></div>
+        <input type="range" min="0.01" max="0.5" step="0.01" value="0.10" style="accent-color:#EF9F27" oninput="setW('eta',this.value)">
+      </div>
+    </div>
+
+    <button class="btn" id="btn" onclick="recompute()">Recompute Geodesic Gradients</button>
+    <div class="status" id="status"></div>
+
+    <div class="metrics">
+      <div class="slabel">Scalar outputs</div>
+      <div class="metric">
+        <div class="mlabel">Total system loss</div>
+        <div class="mval" id="mloss" style="color:#E24B4A">0.731</div>
+      </div>
+      <div class="metric">
+        <div class="mlabel">Fuel reduction</div>
+        <div class="mval" id="mfuel" style="color:#5DCAA5">18%</div>
+      </div>
+      <div class="metric">
+        <div class="mlabel">Informal jobs</div>
+        <div class="mval" id="mjobs" style="color:#7F77DD">48</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="canvas-wrap">
+    <canvas id="cv"></canvas>
+    <div class="overlay">
+      <div class="otitle" id="ctitle">Kampala · Loss Landscape</div>
+      <div class="osub">KCCA · 5 divisions · 99 parishes</div>
+    </div>
+    <div class="legend">
+      <div class="litem"><div class="ldot" style="background:#1D9E75"></div><span class="ltext">Low loss</span></div>
+      <div class="litem"><div class="ldot" style="background:#EF9F27"></div><span class="ltext">Moderate</span></div>
+      <div class="litem"><div class="ldot" style="background:#993C1D"></div><span class="ltext">High risk</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="bar">
+  <span>Grid: 20×12 parishes · geodesic loss variance</span>
+  <span class="barst" id="barst">○ adjust weights · recompute</span>
+  <span id="barloss">η = 0.10 · L(θ) = 0.731</span>
+</div>
+</div>
+
+<script>
+const CITIES = {
+  Kampala:{sub:'KCCA · 5 divisions · 99 parishes',baseGap:.62,baseBurn:.48,baseJobs:34,
+    hotspots:[{x:.28,y:.35,r:.11,risk:.92},{x:.61,y:.22,r:.09,risk:.78},{x:.45,y:.65,r:.1,risk:.85},{x:.18,y:.72,r:.08,risk:.71},{x:.78,y:.55,r:.09,risk:.68}],
+    trucks:[{x:.38,y:.42},{x:.55,y:.30},{x:.50,y:.70}],
+    sorters:[{x:.70,y:.40,lbl:'Ntinda hub'},{x:.25,y:.58,lbl:'Rubaga node'},{x:.60,y:.80,lbl:'Ggaba depot'}]},
+  Jinja:{sub:'Jinja City · 3 divisions · tourist corridor',baseGap:.44,baseBurn:.38,baseJobs:22,
+    hotspots:[{x:.32,y:.40,r:.1,risk:.74},{x:.65,y:.30,r:.08,risk:.61},{x:.50,y:.68,r:.09,risk:.80}],
+    trucks:[{x:.40,y:.45},{x:.58,y:.35},{x:.48,y:.72}],
+    sorters:[{x:.72,y:.50,lbl:'Njeru hub'},{x:.28,y:.62,lbl:'Kimaka node'},{x:.55,y:.78,lbl:'Walukuba depot'}]},
+  Mbale:{sub:'Mbale City · Eastern Uganda gateway',baseGap:.55,baseBurn:.52,baseJobs:18,
+    hotspots:[{x:.35,y:.38,r:.09,risk:.82},{x:.60,y:.25,r:.08,risk:.69},{x:.42,y:.70,r:.1,risk:.77},{x:.72,y:.58,r:.08,risk:.64}],
+    trucks:[{x:.38,y:.44},{x:.55,y:.28},{x:.50,y:.72}],
+    sorters:[{x:.68,y:.42,lbl:'Busamaga hub'},{x:.25,y:.55,lbl:'Maluku node'},{x:.55,y:.75,lbl:'Wanale depot'}]}
+};
+
+let city='Kampala';
+let W={w1:.35,w2:.25,w3:.20,w4:.15,eta:.10};
+let computed=false;
+let truckT=[0,.33,.66];
+let raf;
+let heatCache=null;
+let lastW=null;
+let lastCity=null;
+
+const cv=document.getElementById('cv');
+const ctx=cv.getContext('2d');
+const COLS=20,ROWS=12;
+
+function lossFromW(w,c){
+  const d=CITIES[c];
+  return Math.max(.12,Math.min(.98,d.baseGap*w.w1*2.4+d.baseBurn*w.w2*2.1-w.w3*1.8+w.w4*1.6));
+}
+
+function cellColor(cl){
+  if(cl<.33)return`rgba(29,158,117,${.5+cl*.5})`;
+  if(cl<.55)return`rgba(239,159,39,${.5+cl*.3})`;
+  if(cl<.72)return`rgba(216,90,48,${.55+cl*.2})`;
+  return`rgba(162,45,28,${.65+cl*.2})`;
+}
+
+function buildHeat(w,c){
+  const d=CITIES[c];
+  const loss=lossFromW(w,c);
+  const cells=[];
+  for(let r=0;r<ROWS;r++){
+    for(let col=0;col<COLS;col++){
+      const cx=col/COLS,cy=r/ROWS;
+      let minD=999;
+      d.hotspots.forEach(h=>{
+        const dist=Math.sqrt((cx-h.x)**2+(cy-h.y)**2);
+        minD=Math.min(minD,dist/h.r*h.risk);
+      });
+      cells.push(Math.min(1,minD*loss*1.1));
+    }
+  }
+  return cells;
+}
+
+function bezierPt(fx,fy,tx,ty,w3,t){
+  const bend=(w3-.1)*Math.min(cv.height*.35,120);
+  const mx=(fx+tx)/2,my=(fy+ty)/2-bend;
+  const u=1-t;
+  return{x:u*u*fx+2*u*t*mx+t*t*tx,y:u*u*fy+2*u*t*my+t*t*ty};
+}
+
+function draw(){
+  const W2=cv.width,H=cv.height;
+  if(!W2||!H)return;
+  const cw=W2/COLS,ch=H/ROWS;
+  ctx.clearRect(0,0,W2,H);
+
+  const wKey=JSON.stringify(W)+city;
+  if(wKey!==lastW){heatCache=buildHeat(W,city);lastW=wKey;}
+  const cells=heatCache;
+  const alpha=computed?.9:.55;
+
+  for(let i=0;i<cells.length;i++){
+    const r=Math.floor(i/COLS),c=i%COLS;
+    ctx.fillStyle=cellColor(cells[i]);
+    ctx.globalAlpha=alpha;
+    ctx.fillRect(c*cw,r*ch,cw,ch);
+  }
+  ctx.globalAlpha=1;
+
+  ctx.strokeStyle='rgba(0,0,0,.22)';
+  ctx.lineWidth=.5;
+  for(let i=0;i<=COLS;i++){ctx.beginPath();ctx.moveTo(i*cw,0);ctx.lineTo(i*cw,H);ctx.stroke();}
+  for(let i=0;i<=ROWS;i++){ctx.beginPath();ctx.moveTo(0,i*ch);ctx.lineTo(W2,i*ch);ctx.stroke();}
+
+  const d=CITIES[city];
+  d.hotspots.forEach(h=>{
+    ctx.beginPath();
+    ctx.arc(h.x*W2,h.y*H,h.r*W2*.55,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(216,90,48,${.25+h.risk*.3})`;
+    ctx.lineWidth=1;
+    ctx.setLineDash([4,3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  d.trucks.forEach((tr,i)=>{
+    const so=d.sorters[i%d.sorters.length];
+    const fx=tr.x*W2,fy=tr.y*H,tx=so.x*W2,ty=so.y*H;
+    const bend=(W.w3-.1)*Math.min(H*.35,120);
+    const mx=(fx+tx)/2,my=(fy+ty)/2-bend;
+    ctx.beginPath();
+    ctx.moveTo(fx,fy);
+    ctx.quadraticCurveTo(mx,my,tx,ty);
+    ctx.strokeStyle=computed?'rgba(93,202,165,.75)':'rgba(93,202,165,.2)';
+    ctx.lineWidth=computed?1.8:1;
+    ctx.setLineDash(computed?[]:[5,4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  d.sorters.forEach((s,i)=>{
+    ctx.beginPath();
+    ctx.arc(s.x*W2,s.y*H,7,0,Math.PI*2);
+    ctx.fillStyle=computed?'rgba(127,119,221,.85)':'rgba(127,119,221,.3)';
+    ctx.fill();
+    ctx.strokeStyle='rgba(127,119,221,.6)';
+    ctx.lineWidth=1;
+    ctx.stroke();
+    ctx.fillStyle='rgba(180,178,210,.65)';
+    ctx.font='9px monospace';
+    ctx.fillText(s.lbl,s.x*W2+10,s.y*H+4);
+  });
+
+  d.trucks.forEach((tr,i)=>{
+    const so=d.sorters[i%d.sorters.length];
+    const fx=tr.x*W2,fy=tr.y*H,tx=so.x*W2,ty=so.y*H;
+    ctx.fillStyle='rgba(239,159,39,.5)';
+    ctx.strokeStyle='rgba(239,159,39,.8)';
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.roundRect(fx-5,fy-5,10,10,2);
+    ctx.fill();ctx.stroke();
+
+    if(computed){
+      const pt=bezierPt(fx,fy,tx,ty,W.w3,truckT[i]);
+      const colors=['#EF9F27','#7F77DD','#5DCAA5'];
+      ctx.beginPath();
+      ctx.arc(pt.x,pt.y,5,0,Math.PI*2);
+      ctx.fillStyle=colors[i];
+      ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,.4)';
+      ctx.lineWidth=1.5;
+      ctx.stroke();
+    }
+  });
+
+  if(!computed){
+    ctx.fillStyle='rgba(255,255,255,.12)';
+    ctx.font='11px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('ADJUST WEIGHTS · RECOMPUTE GRADIENTS',W2/2,H/2);
+    ctx.textAlign='left';
+  }
+}
+
+function loop(ts){
+  const d=CITIES[city];
+  if(computed){
+    truckT=truckT.map((t,i)=>{
+      const speed=.0004+W.w3*.0003;
+      return(t+speed*16.7)%1;
+    });
+  }
+  draw();
+  raf=requestAnimationFrame(loop);
+}
+
+function resize(){
+  const wrap=cv.parentElement;
+  cv.width=wrap.clientWidth;
+  cv.height=wrap.clientHeight;
+  draw();
+}
+
+function updateMetrics(){
+  const loss=lossFromW(W,city);
+  const fuel=Math.min(42,Math.round(W.w2*60+W.w3*20+(1-loss)*18));
+  const jobs=Math.round(CITIES[city].baseJobs+W.w3*120+(1-loss)*30);
+  const lv=document.getElementById('mloss');
+  lv.textContent=loss.toFixed(3);
+  lv.style.color=loss>.6?'#E24B4A':loss>.4?'#EF9F27':'#1D9E75';
+  document.getElementById('mfuel').textContent=fuel+'%';
+  document.getElementById('mjobs').textContent=jobs;
+  document.getElementById('barloss').textContent=`η = ${W.eta.toFixed(2)} · L(θ) = ${loss.toFixed(3)}`;
+}
+
+function setW(k,v){
+  W[k]=parseFloat(v);
+  const ids={w1:'v1',w2:'v2',w3:'v3',w4:'v4',eta:'ve'};
+  document.getElementById(ids[k]).textContent=parseFloat(v).toFixed(2);
+  computed=false;
+  document.getElementById('barst').textContent='○ pending recompute';
+  document.getElementById('barst').style.color='#444';
+  updateMetrics();
+}
+
+function setCity(c,el){
+  city=c;
+  document.querySelectorAll('.city').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('ctitle').textContent=c+' · Loss Landscape';
+  document.querySelector('.osub').textContent=CITIES[c].sub;
+  computed=false;
+  truckT=[0,.33,.66];
+  document.getElementById('barst').textContent='○ pending recompute';
+  document.getElementById('barst').style.color='#444';
+  updateMetrics();
+}
+
+const STEPS=['Fitting Gaussian Process surrogate...','Computing acquisition function (EI)...','Sampling geodesic candidates...','Posterior variance updated. Routes stabilised.'];
+function recompute(){
+  const btn=document.getElementById('btn');
+  const st=document.getElementById('status');
+  btn.disabled=true;
+  computed=false;
+  let i=0;
+  st.textContent=STEPS[0];
+  const iv=setInterval(()=>{
+    i++;
+    if(i<STEPS.length)st.textContent=STEPS[i];
+    if(i>=STEPS.length-1){
+      clearInterval(iv);
+      setTimeout(()=>{
+        computed=true;
+        truckT=[0,.33,.66];
+        btn.disabled=false;
+        st.textContent='';
+        document.getElementById('barst').textContent='● routes stabilised';
+        document.getElementById('barst').style.color='#1D9E75';
+        updateMetrics();
+      },400);
+    }
+  },500);
+}
+
+window.setW=setW;
+window.setCity=setCity;
+window.recompute=recompute;
+
+window.addEventListener('resize',resize);
+setTimeout(()=>{resize();cancelAnimationFrame(raf);loop();},100);
+updateMetrics();
+</script>
