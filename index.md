@@ -1,3 +1,12 @@
+---
+title: Ukubona Waste Twin — UNDP Proposal
+layout: default
+permalink: /
+date: 2026-05-28
+---
+
+{% raw %}
+
 # [xAI](https://drk-school-ui.onrender.com/)
 https://www.undp.org/sites/g/files/zskgke326/files/2026-05/call_for_ic-mo_v2_updated.pdf
 
@@ -2380,3 +2389,5 @@ T506 was philosophical. T507 was operational. T508 should feel almost **judicial
 Do you want me to now write the full T508.jsx, or refine any part of this plan first?
 
 # Ukubona
+
+{% endraw %}
